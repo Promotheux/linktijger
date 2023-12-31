@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test</title>
+    <script src="https://cdn.jsdelivr.net/gh/mitchwadair/tesjs@v1.0.2/dist/tes.min.js"></script>
+    <style>
+        @import url(https://db.onlinewebfonts.com/c/66dfbd3722e8eda18b7cd325dfdc583e?family=Neon);
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        main {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            display: block;
+        }
+        button {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <canvas id="canvas"></canvas>
+    </main>
+    <script async>
+        let trainActive = false;
+        let maxLastEvents = 3;
+        let lastEvents = [];
+        let minBits = 100;
+
+        // Channel ID to listen for events
+        const channelId = 38486263;
+        const authToken = 'rtxrz54fugkr0bj1dmg9w779qvfdyn';
+
+        const config = {
+            identity: {
+                id: 'gp762nuuoqcoxypju8c569th9wz7q5',
+                accessToken: authToken,
+            },
+            listener: {type: 'websocket'}
+        };
+
+        const tes = new TES(config);
+
+        async function removeAllSubscriptions() {
+        try {
+            // Get the current subscriptions
+            const subscriptions = await tes.getSubscriptions();
+           
+            console.log(subscriptions);
+            for(subscription of subscriptions.data)
+            {
+                tes.unsubscribe(subscription.id);
+            }
+            } catch (error) {
+                console.error("Error removing subscriptions:", error);
+            }
+        }
+        removeAllSubscriptions();
+
+        const condition = { broadcaster_user_id: "38486263" };
+        async function setupSubscriptions() {
+            await tes.subscribe('channel.update', condition);
+            await tes.subscribe('channel.hype_train.begin', condition);
+            await tes.subscribe('channel.hype_train.end', condition);
+        }
+        
+        setupSubscriptions();
+
+        const subs = tes.getSubscriptions().then(subs => {
+            console.log(subs);
+        });
+
+        tes.on("channel.update", (event) => {
+            console.log(`${event.broadcaster_user_name}'s new title is ${event.title}`);
+        });
+
+        tes.on('channel.hype_train.begin', (event) => {
+            console.log(`${event.broadcaster_user_name} started a hype train!`);
+            sendMessage(`${event.broadcaster_user_name} started a hype train!`);
+            trainActive = true;
+        });
+
+        tes.on('channel.hype_train.end', (event) => {
+            console.log(`${event.broadcaster_user_name} ended the hype train!`);
+            sendMessage(`${event.broadcaster_user_name} ended the hype train!`);
+            trainActive = false;
+            wagons = [];
+        });
+
+        const pubSocket = new WebSocket('wss://pubsub-edge.twitch.tv');
+        // Add event listeners for Twitch PubSub WebSocket
+        pubSocket.addEventListener('open', (event) => {
+            // Additional initialization for Twitch PubSub if needed
+            pubSocket.send(JSON.stringify({
+                type: 'LISTEN',
+                data: {
+                    topics: [`channel-subscribe-events-v1.${channelId}`, `channel-bits-events-v1.${channelId}`], // Replace with your channel ID
+                    auth_token: 'rtxrz54fugkr0bj1dmg9w779qvfdyn' // Replace with your actual OAuth token
+                }
+            }));
+        });
+
+        pubSocket.addEventListener('message', (event) => {
+            // Handle messages from Twitch PubSub if needed
+            let eventData = JSON.parse(event.data);
+            let msg = JSON.stringify(eventData);
+           
+            if(eventData.type === 'MESSAGE') {
+                console.log(eventData.data.topic);
+                let origin = JSON.parse(eventData.data.message);
+                if(eventData.data.topic === "channel-bits-events-v1.38486263") {
+                    if(origin.data.bits_used >= 1)
+                        addWagon(origin.data.user_name);
+                }
+                if(eventData.data.topic === "channel-subscribe-events-v1.38486263") {
+                    addWagon(origin.data.user_name);
+                }
+            }
+        });
+
+        setInterval(() => {
+            pubSocket.send(JSON.stringify({ type: 'PING' }));
+        }, 5 * 60 * 1000);
+
+        // Close the Twitch PubSub WebSocket connection on page unload
+        window.addEventListener('beforeunload', () => {
+            pubSocket.close();
+        });
+
+
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext("2d");
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let base = new Image();
+        base.width = 0;
+        base.height = 0;
+
+        let train = new Image();
+        train.width = 112;
+        train.height = 112;
+
+        let wagons = [];
+
+        base.onload = function() {
+            ctx.imageSmoothingEnabled = false;
+            let size = train.width * window.devicePixelRatio;
+            let top = 0 + size;
+            let middle = canvas.height / 2 - size / 2;
+            let topMiddle = canvas.height / 4 - size / 2;
+            let bottomMiddle = canvas.height / 4 * 3 - size / 2;
+            let bottom = canvas.height - size;
+
+            let driveInAt = [bottom, top, middle, topMiddle, bottomMiddle];
+
+            var x = canvas.width;
+            var y = driveInAt[Math.floor(Math.random() * driveInAt.length)];
+            var direction = 'left';
+
+            function animate() {
+                let trainLength = (wagons.length + 1) * size;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if(wagons.length > 0) {
+                    if (x + size > -trainLength && direction === 'left'){
+                        // Update the position for animation (move to the left and bottom)
+                        x -= 0.75; // Adjust the speed as needed
+
+                        // Draw the image on the canvas at the updated position and size
+                        train.src = "https://i.gyazo.com/3f192b80f84406e6737ba6df85fa4cd4.png";
+                        ctx.drawImage(train, x, y, size, size);
+
+                        wagons.forEach((wagon, index) => {
+                            let newX = x + ((index + 1) * size);
+                            wagon.image.src = "https://i.gyazo.com/2c606c68f79fb8ce7473a12b0f9ce72e.png";
+                            ctx.drawImage(wagon.image, newX, y, size, size);
+                            drawName(wagon.user, newX + (size/2), y - 5, size, size);
+                        });
+                    } else {
+                        if (x <= -(trainLength)) {
+                            direction = 'right';
+                            x = 0 - size;
+                            y =  driveInAt[Math.floor(Math.random() * driveInAt.length)];// Continue from the right side
+                        }
+
+                        if(x > canvas.width + trainLength) {
+                            direction = 'left';
+                            y = driveInAt[Math.floor(Math.random() * driveInAt.length)];
+                        }
+
+                        // Update the position for animation (move to the left and bottom)
+                        x += 0.75; // Adjust the speed as needed
+
+                        train.src = "https://i.gyazo.com/7f9b67a34a1605d9612dadae43b05525.png";
+                        // Draw the image on the canvas at the updated position and size
+                        ctx.drawImage(train, x, y, -size, size);
+
+                        wagons.forEach((wagon, index) => {
+                            let newX = x - ((index + 1) * size);
+                            wagon.image.src = "https://i.gyazo.com/41c9823f45fb79ea051b45172fb61264.png";
+                            ctx.drawImage(wagon.image, newX, y, -size, size);
+                            drawName(wagon.user, newX - (size/2), y - 5, size, size);
+                        });
+                    }
+                }
+                // Request the next animation frame
+                requestAnimationFrame(animate);
+
+                function drawName(name, x, y, width, height) {
+                    name = name.toUpperCase();
+                    ctx.font = "21px Neon";
+                    ctx.fillStyle = "#fff";
+                    ctx.textAlign = "center";
+                    ctx.strokStyle = "#000";
+                    ctx.shadowOffsetX = 3;
+                    ctx.shadowOffsetY = 3;
+                    ctx.shadowBlur = 4;
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+                    ctx.lineWidth = 4;
+                    ctx.strokeText(name, x, y);
+                    ctx.lineWidth = 0;
+                    ctx.fillText(name, x, y);
+                }
+            }
+
+            // Draw the image on the canvas at the calculated position and size
+            animate();
+        }
+      
+        base.src = "https://i.gyazo.com/3f192b80f84406e6737ba6df85fa4cd4.png";
+
+        async function addWagon(user) {
+            if(trainActive) {
+                // Check if the user is already in the wagons array
+                const userExists = wagons.some(wagon => wagon.user === user);
+
+                // If the user is not already in wagons, add a new wagon
+                if (!userExists) {
+                    let wagon = new Image();
+                    wagon.width = 112;
+                    wagon.height = 112;
+                    wagon.src = "https://i.gyazo.com/2c606c68f79fb8ce7473a12b0f9ce72e.png";
+                    wagons.push({ image: wagon, user });
+                }
+            } else {
+                // Check if the user is already in the lastEvents array
+                const userExists = lastEvents.includes(user);
+                if(!userExists) {
+                    if (lastEvents.length < maxLastEvents) {
+                        lastEvents.push(user);
+                    } else {
+                        // Remove the oldest event
+                        lastEvents.shift();
+                        // Add the new event
+                        lastEvents.push(user);
+                    }
+                }
+            }
+        }
+
+        lastEvents.forEach(user => {
+            addWagon(user);
+        });
+
+    function sendMessage(message) {
+        const request = new XMLHttpRequest();
+        request.open("POST", "https://canary.discord.com/api/webhooks/1148340655840579615/sM8hKS4Pv_lNxwGMWY1RS46kp523-nyclpOY3Z6zaHbysVRFJK9V0TUeLeGLRQCzZaiO");
+
+        request.setRequestHeader('Content-type', 'application/json');
+
+        const params = {
+            username: "Promo's treintje",
+            avatar_url: "https://github.com/Promotheux.png",
+            content: message
+        }
+
+        request.send(JSON.stringify(params));
+    }
+
+    </script>
+</body>
+</html>
