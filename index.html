@@ -126,7 +126,7 @@
             
             if(eventData.type === 'MESSAGE') {
                 console.log(eventData.data.topic);
-                cnsole.log(eventData.data);
+                console.log(eventData.data);
                 let origin = JSON.parse(eventData.data.message);
                 if(eventData.data.topic === "channel-bits-events-v1.38486263") {
                     if(origin.data.bits_used >= 100)
