@@ -64,23 +64,23 @@
                 console.error("Error removing subscriptions:", error);
             }
         }
-        // removeAllSubscriptions();
+        removeAllSubscriptions();
 
         const condition = { broadcaster_user_id: "38486263" };
         async function setupUpdate() {
             await tes.subscribe('channel.update', condition);
         }
 
-        //setupUpdate();
+        setupUpdate();
         async function setupHypeTrainStart(){
             await tes.subscribe('channel.hype_train.begin', condition);
         }
-        //setupHypeTrainStart();
+        setupHypeTrainStart();
 
         async function setupHypeTrainEnd(){
             await tes.subscribe('channel.hype_train.end', condition);
         }
-        //setupHypeTrainEnd();
+        setupHypeTrainEnd();
 
         tes.on("channel.update", (event) => {
             console.log(`${event.broadcaster_user_name}'s new title is ${event.title}`);
@@ -118,7 +118,6 @@
         ];
 
         tes.on("connection_lost", (subscriptions) => {
-            // if your subscriptions are important to you, resubscribe to them
             subscriptions.forEach((subscription) => {
                 tes.subscribe(subscription.type, subscription.condition);
             });
