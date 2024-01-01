@@ -67,13 +67,20 @@
         removeAllSubscriptions();
 
         const condition = { broadcaster_user_id: "38486263" };
-        async function setupSubscriptions() {
+        async function setupUpdate() {
             await tes.subscribe('channel.update', condition);
+        }
+
+        setupUpdate();
+        async function setupHypeTrainStart(){
             await tes.subscribe('channel.hype_train.begin', condition);
+        }
+        setupHypeTrainStart();
+
+        async function setupHypeTrainEnd(){
             await tes.subscribe('channel.hype_train.end', condition);
         }
-        
-        setupSubscriptions();
+        setupHypeTrainEnd();
 
         const subs = tes.getSubscriptions().then(subs => {
             console.log(subs);
