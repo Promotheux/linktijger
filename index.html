@@ -82,10 +82,6 @@
         }
         //setupHypeTrainEnd();
 
-        const subs = tes.getSubscriptions().then(subs => {
-            console.log(subs);
-        });
-
         tes.on("channel.update", (event) => {
             console.log(`${event.broadcaster_user_name}'s new title is ${event.title}`);
         });
@@ -104,6 +100,33 @@
             sendMessage(`${event.broadcaster_user_name} ended the hype train!`);
             trainActive = false;
             wagons = [];
+        });
+
+        let subscriptions = [
+            {
+                type: 'channel.update',
+                condition: { broadcaster_user_id: "38486263" }
+            },
+            {
+                type: 'channel.hype_train.begin',
+                condition: { broadcaster_user_id: "38486263" }
+            },
+            {
+                type: 'channel.hype_train.end',
+                condition: { broadcaster_user_id: "38486263" }
+            },
+        ];
+
+        tes.on("connection_lost", (subscriptions) => {
+            // if your subscriptions are important to you, resubscribe to them
+            subscriptions.forEach((subscription) => {
+                tes.subscribe(subscription.type, subscription.condition);
+            });
+        });
+
+
+        const subs = tes.getSubscriptions().then(subs => {
+            console.log(subs);
         });
 
         const pubSocket = new WebSocket('wss://pubsub-edge.twitch.tv');
@@ -279,6 +302,54 @@
                 }
             }
         }
+
+
+    const eventSocket = new WebSocket('wss://eventsub.wss.twitch.tv/ws');
+    eventSocket.addEventListener('open', (event) => {
+            // Subscribe to the desired events for the specified channel
+            eventSocket.send(JSON.stringify({
+                type: 'LISTEN',
+                data: {
+                    topics: [`channel.hype_train.begin.${channelId}`, `channel.hype_train.end.${channelId}`, `channel.hype_train.progress.${channelId}`],
+                    auth_token: 'rtxrz54fugkr0bj1dmg9w779qvfdyn' // Replace with your actual OAuth token
+                }
+            }));
+        });
+
+        eventSocket.addEventListener('message', (event) => {
+            const eventData = JSON.parse(event.data);
+            let msg = JSON.stringify(eventData);
+            sendMessage("EventSocket: ```" + msg + "```");
+
+            // Handle different types of events from Twitch EventSub
+            switch (eventData.metadata.message_type) {
+                case 'session_welcome':
+                    // Handle session_welcome event if needed
+                    console.log('Twitch WS is connected and ready');
+                    break;
+                case 'channel.hype_train.begin':
+                    trainActive = true;
+                    console.log("Train started");
+                    sendMessage("Train started");
+
+                    // Handle any users in lastEvents array (if any)
+                    lastEvents.forEach(user => {
+                        addWagon(user);
+                    });
+                    // Clear the lastEvents array
+                    lastEvents.length = 0;
+                    break;
+                case 'channel.hype_train.end':
+                    // Set global trainActive to false
+                    trainActive = false;
+                    break;
+                default:
+                    // Handle other event types if needed
+                    break;
+            }
+        });
+
+
 
     function sendMessage(message) {
         const request = new XMLHttpRequest();
