@@ -123,16 +123,18 @@
             // Handle messages from Twitch PubSub if needed
             let eventData = JSON.parse(event.data);
             let msg = JSON.stringify(eventData);
-           
+            console.log(eventData.data);
+            
             if(eventData.type === 'MESSAGE') {
                 console.log(eventData.data.topic);
+                cnsole.log(eventData.data);
                 let origin = JSON.parse(eventData.data.message);
                 if(eventData.data.topic === "channel-bits-events-v1.38486263") {
                     if(origin.data.bits_used >= 100)
-                        addWagon(origin.data.user_name);
+                        addWagon(eventData.data.user_name);
                 }
                 if(eventData.data.topic === "channel-subscribe-events-v1.38486263") {
-                    addWagon(origin.data.user_name);
+                    addWagon(eventData.data.user_name);
                 }
             }
         });
