@@ -94,6 +94,9 @@
             console.log(`${event.broadcaster_user_name} started a hype train!`);
             sendMessage(`${event.broadcaster_user_name} started a hype train!`);
             trainActive = true;
+            lastEvents.forEach(user => {
+                addWagon(user);
+            });
         });
 
         tes.on('channel.hype_train.end', (event) => {
@@ -125,7 +128,7 @@
                 console.log(eventData.data.topic);
                 let origin = JSON.parse(eventData.data.message);
                 if(eventData.data.topic === "channel-bits-events-v1.38486263") {
-                    if(origin.data.bits_used >= 1)
+                    if(origin.data.bits_used >= 100)
                         addWagon(origin.data.user_name);
                 }
                 if(eventData.data.topic === "channel-subscribe-events-v1.38486263") {
@@ -247,6 +250,7 @@
         base.src = "https://i.gyazo.com/3f192b80f84406e6737ba6df85fa4cd4.png";
 
         async function addWagon(user) {
+            sendMessage(`${user} added to a wagon!`);
             if(trainActive) {
                 // Check if the user is already in the wagons array
                 const userExists = wagons.some(wagon => wagon.user === user);
@@ -274,10 +278,6 @@
                 }
             }
         }
-
-        lastEvents.forEach(user => {
-            addWagon(user);
-        });
 
     function sendMessage(message) {
         const request = new XMLHttpRequest();
