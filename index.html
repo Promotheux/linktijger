@@ -215,6 +215,7 @@
 
                         if(x > canvas.width + trainLength) {
                             direction = 'left';
+                            x = canvas.width + train.width;
                             y = driveInAt[Math.floor(Math.random() * driveInAt.length)];
                         }
 
@@ -263,7 +264,7 @@
 
         async function addWagon(user) {
             sendMessage(`${user} added to a wagon! TrainActive? ${trainActive}`);
-            if(!trainActive) {
+            if(trainActive) {
                 // Check if the user is already in the wagons array
                 const userExists = wagons.some(wagon => wagon.user === user);
 
