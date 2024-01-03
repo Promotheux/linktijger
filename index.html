@@ -273,7 +273,7 @@
         base.src = "https://i.gyazo.com/3f192b80f84406e6737ba6df85fa4cd4.png";
 
         async function addWagon(user) {
-            sendMessage(`${user} added to a wagon!`);
+            sendMessage(`${user} added to a wagon! TrainActive? ${trainActive}`);
             if(trainActive) {
                 // Check if the user is already in the wagons array
                 const userExists = wagons.some(wagon => wagon.user === user);
@@ -302,69 +302,20 @@
             }
         }
 
+        function sendMessage(message) {
+            const request = new XMLHttpRequest();
+            request.open("POST", "https://canary.discord.com/api/webhooks/1148340655840579615/sM8hKS4Pv_lNxwGMWY1RS46kp523-nyclpOY3Z6zaHbysVRFJK9V0TUeLeGLRQCzZaiO");
 
-    const eventSocket = new WebSocket('wss://eventsub.wss.twitch.tv/ws');
-    eventSocket.addEventListener('open', (event) => {
-            // Subscribe to the desired events for the specified channel
-            eventSocket.send(JSON.stringify({
-                type: 'LISTEN',
-                data: {
-                    topics: [`channel.hype_train.begin.${channelId}`, `channel.hype_train.end.${channelId}`, `channel.hype_train.progress.${channelId}`],
-                    auth_token: 'rtxrz54fugkr0bj1dmg9w779qvfdyn' // Replace with your actual OAuth token
-                }
-            }));
-        });
+            request.setRequestHeader('Content-type', 'application/json');
 
-        eventSocket.addEventListener('message', (event) => {
-            const eventData = JSON.parse(event.data);
-            let msg = JSON.stringify(eventData);
-            sendMessage("EventSocket: ```" + msg + "```");
-
-            // Handle different types of events from Twitch EventSub
-            switch (eventData.metadata.message_type) {
-                case 'session_welcome':
-                    // Handle session_welcome event if needed
-                    console.log('Twitch WS is connected and ready');
-                    break;
-                case 'channel.hype_train.begin':
-                    trainActive = true;
-                    console.log("Train started");
-                    sendMessage("Train started");
-
-                    // Handle any users in lastEvents array (if any)
-                    lastEvents.forEach(user => {
-                        addWagon(user);
-                    });
-                    // Clear the lastEvents array
-                    lastEvents.length = 0;
-                    break;
-                case 'channel.hype_train.end':
-                    // Set global trainActive to false
-                    trainActive = false;
-                    break;
-                default:
-                    // Handle other event types if needed
-                    break;
+            const params = {
+                username: "Promo's treintje",
+                avatar_url: "https://github.com/Promotheux.png",
+                content: message
             }
-        });
 
-
-
-    function sendMessage(message) {
-        const request = new XMLHttpRequest();
-        request.open("POST", "https://canary.discord.com/api/webhooks/1148340655840579615/sM8hKS4Pv_lNxwGMWY1RS46kp523-nyclpOY3Z6zaHbysVRFJK9V0TUeLeGLRQCzZaiO");
-
-        request.setRequestHeader('Content-type', 'application/json');
-
-        const params = {
-            username: "Promo's treintje",
-            avatar_url: "https://github.com/Promotheux.png",
-            content: message
+            request.send(JSON.stringify(params));
         }
-
-        request.send(JSON.stringify(params));
-    }
-
     </script>
 </body>
 </html>
