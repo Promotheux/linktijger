@@ -96,25 +96,10 @@
             wagons = [];
         });
 
-        let subscriptions = [
-            {
-                type: 'channel.update',
-                condition: { broadcaster_user_id: "38486263" }
-            },
-            {
-                type: 'channel.hype_train.begin',
-                condition: { broadcaster_user_id: "38486263" }
-            },
-            {
-                type: 'channel.hype_train.end',
-                condition: { broadcaster_user_id: "38486263" }
-            },
-        ];
-
         tes.on("connection_lost", (subscriptions) => {
-            subscriptions.forEach((subscription) => {
-                tes.subscribe(subscription.type, subscription.condition);
-            });
+            setupUpdate();
+            setupHypeTrainStart();
+            setupHypeTrainEnd(); 
         });
 
         const pubSocket = new WebSocket('wss://pubsub-edge.twitch.tv');
@@ -209,13 +194,12 @@
                     } else {
                         if (x <= -(trainLength)) {
                             direction = 'right';
+                            y =  driveInAt[Math.floor(Math.random() * driveInAt.length)];
                             x = 0 - size;
-                            y =  driveInAt[Math.floor(Math.random() * driveInAt.length)];// Continue from the right side
                         }
 
                         if(x > canvas.width + trainLength) {
                             direction = 'left';
-                            x = canvas.width + train.width;
                             y = driveInAt[Math.floor(Math.random() * driveInAt.length)];
                         }
 
@@ -317,14 +301,12 @@
                 });
 
                 const data = await response.json();
-                console.log(data.data);
 
                 if (data.data && data.data.length > 0) {
                     const hypeTrainEvent = data.data[0];
                     const expiresAt = new Date(hypeTrainEvent.event_data.expires_at);
                     const currentTime = new Date(); 
                     const currentTimeGMT = new Date(currentTime.toLocaleString('en-US', { timeZone: 'GMT' }));
-                    console.log(currentTimeGMT);
 
                     if (expiresAt < currentTimeGMT) {
                         sendMessage("Hype train has expired.");
@@ -345,8 +327,7 @@
             if(trainActive) {
                 checkHypeTrainStatus();
             }
-        }
-            
+        }   
     </script>
 </body>
 </html>
