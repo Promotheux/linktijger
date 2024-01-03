@@ -231,6 +231,8 @@
                             ctx.drawImage(wagon.image, newX, y, -size, size);
                             drawName(wagon.user, newX - (size/2), y - 5, size, size);
                         });
+
+                        checkTrainStatus();
                     }
                 }
                 // Request the next animation frame
@@ -338,11 +340,10 @@
             }
         }
 
-        // Set interval to check hype train status every 5 minutes (5 * 60 * 1000 milliseconds)
-        if(trainActive) {
-            setInterval(checkHypeTrainStatus, 30 * 1000);
-        } else {
-            clearInterval(checkHypeTrainStatus);
+        function checkTrainStatus() {
+            if(trainActive) {
+                checkHypeTrainStatus();
+            }
         }
             
     </script>
