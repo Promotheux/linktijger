@@ -54,8 +54,7 @@
         try {
             // Get the current subscriptions
             const subscriptions = await tes.getSubscriptions();
-           
-            console.log(subscriptions);
+    
             for(subscription of subscriptions.data)
             {
                 tes.unsubscribe(subscription.id);
@@ -82,12 +81,7 @@
         }
         setupHypeTrainEnd();
 
-        tes.on("channel.update", (event) => {
-            console.log(`${event.broadcaster_user_name}'s new title is ${event.title}`);
-        });
-
         tes.on('channel.hype_train.begin', (event) => {
-            console.log(`${event.broadcaster_user_name} started a hype train!`);
             sendMessage(`${event.broadcaster_user_name} started a hype train!`);
             trainActive = true;
             lastEvents.forEach(user => {
@@ -96,9 +90,9 @@
         });
 
         tes.on('channel.hype_train.end', (event) => {
-            console.log(`${event.broadcaster_user_name} ended the hype train!`);
             sendMessage(`${event.broadcaster_user_name} ended the hype train!`);
             trainActive = false;
+            lastEvents = [];
             wagons = [];
         });
 
@@ -123,11 +117,6 @@
             });
         });
 
-
-        const subs = tes.getSubscriptions().then(subs => {
-            console.log(subs);
-        });
-
         const pubSocket = new WebSocket('wss://pubsub-edge.twitch.tv');
         // Add event listeners for Twitch PubSub WebSocket
         pubSocket.addEventListener('open', (event) => {
@@ -147,8 +136,6 @@
             let msg = JSON.stringify(eventData);
             
             if(eventData.type === 'MESSAGE') {
-                console.log(eventData.data.topic);
-                console.log(eventData.data);
                 let origin = JSON.parse(eventData.data.message);
                 if(eventData.data.topic === "channel-bits-events-v1.38486263") {
                     if(origin.data.bits_used >= 100)
@@ -181,8 +168,8 @@
         base.height = 0;
 
         let train = new Image();
-        train.width = 112;
-        train.height = 112;
+        train.width = 130;
+        train.height = 130;
 
         let wagons = [];
 
@@ -207,7 +194,7 @@
                 if(wagons.length > 0) {
                     if (x + size > -trainLength && direction === 'left'){
                         // Update the position for animation (move to the left and bottom)
-                        x -= 0.75; // Adjust the speed as needed
+                        x -= 0.9; // Adjust the speed as needed
 
                         // Draw the image on the canvas at the updated position and size
                         train.src = "https://i.gyazo.com/3f192b80f84406e6737ba6df85fa4cd4.png";
@@ -232,7 +219,7 @@
                         }
 
                         // Update the position for animation (move to the left and bottom)
-                        x += 0.75; // Adjust the speed as needed
+                        x += 0.9; // Adjust the speed as needed
 
                         train.src = "https://i.gyazo.com/7f9b67a34a1605d9612dadae43b05525.png";
                         // Draw the image on the canvas at the updated position and size
@@ -274,15 +261,15 @@
 
         async function addWagon(user) {
             sendMessage(`${user} added to a wagon! TrainActive? ${trainActive}`);
-            if(trainActive) {
+            if(!trainActive) {
                 // Check if the user is already in the wagons array
                 const userExists = wagons.some(wagon => wagon.user === user);
 
                 // If the user is not already in wagons, add a new wagon
                 if (!userExists) {
                     let wagon = new Image();
-                    wagon.width = 112;
-                    wagon.height = 112;
+                    wagon.width = 130;
+                    wagon.height = 130;
                     wagon.src = "https://i.gyazo.com/2c606c68f79fb8ce7473a12b0f9ce72e.png";
                     wagons.push({ image: wagon, user });
                 }
@@ -316,6 +303,48 @@
 
             request.send(JSON.stringify(params));
         }
+
+        async function checkHypeTrainStatus() {
+            try {
+                const response = await fetch(`https://api.twitch.tv/helix/hypetrain/events?broadcaster_id=38486263`, {
+                    headers: {
+                        'Client-ID': 'gp762nuuoqcoxypju8c569th9wz7q5', // Replace with your Twitch Client ID
+                        'Authorization': `Bearer ${authToken}` // Replace with your Twitch OAuth token
+                    }
+                });
+
+                const data = await response.json();
+                console.log(data.data);
+
+                if (data.data && data.data.length > 0) {
+                    const hypeTrainEvent = data.data[0];
+                    const expiresAt = new Date(hypeTrainEvent.event_data.expires_at);
+                    const currentTime = new Date(); 
+                    const currentTimeGMT = new Date(currentTime.toLocaleString('en-US', { timeZone: 'GMT' }));
+                    console.log(currentTimeGMT);
+
+                    if (expiresAt < currentTimeGMT) {
+                        sendMessage("Hype train has expired.");
+                        trainActive = false;
+                        return false;
+                    }
+                } else {
+                    sendMessage("Hype train is not active.");
+                    trainActive = false;
+                    return false;
+                }
+            } catch (error) {
+                console.error("Error checking hype train status:", error);
+            }
+        }
+
+        // Set interval to check hype train status every 5 minutes (5 * 60 * 1000 milliseconds)
+        if(trainActive) {
+            setInterval(checkHypeTrainStatus, 30 * 1000);
+        } else {
+            clearInterval(checkHypeTrainStatus);
+        }
+            
     </script>
 </body>
 </html>
