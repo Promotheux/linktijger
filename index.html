@@ -275,11 +275,10 @@
         base.src = "https://i.gyazo.com/3f192b80f84406e6737ba6df85fa4cd4.png";
 
         async function addWagon(user) {
-            sendMessage(`${user} added to a wagon! TrainActive? ${trainActive}`);
             if(trainActive) {
+                sendMessage('Wagon toegevoegd: ' + user);
                 // Check if the user is already in the wagons array
                 const userExists = wagons.some(wagon => wagon.user === user);
-
                 // If the user is not already in wagons, add a new wagon
                 if (!userExists) {
                     let wagon = new Image();
@@ -300,6 +299,8 @@
                         // Add the new event
                         lastEvents.push(user);
                     }
+
+                    sendMessage('Staan te wachten: ' + lastEvents.join(', '));
                 }
             }
         }
