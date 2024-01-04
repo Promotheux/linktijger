@@ -92,11 +92,10 @@
         tes.on('channel.hype_train.end', (event) => {
             sendMessage(`${event.broadcaster_user_name} ended the hype train!`);
             trainActive = false;
-            lastEvents = [];
-            wagons = [];
         });
 
         tes.on("connection_lost", (subscriptions) => {
+            removeAllSubscriptions();
             setupUpdate();
             setupHypeTrainStart();
             setupHypeTrainEnd(); 
@@ -216,8 +215,13 @@
                             ctx.drawImage(wagon.image, newX, y, -size, size);
                             drawName(wagon.user, newX - (size/2), y - 5, size, size);
                         });
+                    }
 
-                        checkTrainStatus();
+                    if (!trainActive && (x <= -trainLength || x >= canvas.width + trainLength)) {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        wagons = [];
+                        lastEvents = [];
+                        return;
                     }
                 }
                 // Request the next animation frame
@@ -292,6 +296,7 @@
         }
 
         async function checkHypeTrainStatus() {
+            console.log('Get the latest hypeTrain status');
             try {
                 const response = await fetch(`https://api.twitch.tv/helix/hypetrain/events?broadcaster_id=38486263`, {
                     headers: {
@@ -309,25 +314,28 @@
                     const currentTimeGMT = new Date(currentTime.toLocaleString('en-US', { timeZone: 'GMT' }));
 
                     if (expiresAt < currentTimeGMT) {
-                        sendMessage("Hype train has expired.");
                         trainActive = false;
-                        return false;
                     }
                 } else {
-                    sendMessage("Hype train is not active.");
                     trainActive = false;
-                    return false;
                 }
             } catch (error) {
                 console.error("Error checking hype train status:", error);
             }
+
+            console.log('Train active?', trainActive);
         }
 
-        function checkTrainStatus() {
-            if(trainActive) {
-                checkHypeTrainStatus();
-            }
-        }   
+        setInterval(checkHypeTrainStatus, 30 * 1000);
+
+        function seedTrain(){
+            addWagon('LinkTijger');
+            addWagon('Promotheux');
+            addWagon('MAN0NSTER');
+            addWagon('MonkeyDB');
+            addWagon('Grumper');
+            addWagon('Caithamine');
+        }
     </script>
 </body>
 </html>
