@@ -63,6 +63,15 @@
             location.reload();
         });
 
+        socket.on('addWagon', (user) => {
+            console.log('Socket incomming addWagon', user);
+            addWagon(user);
+        });
+
+        socket.on('setTrainActive', () => {
+            trainActive = true;
+        });
+
         const tes = new TES(config);
 
         async function removeAllSubscriptions() {
