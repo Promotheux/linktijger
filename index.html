@@ -53,11 +53,13 @@
 
 
         socket.on('resetVariables', () => {
+            console.log('socket incomming resetVariables');
             wagons = [];
             trainActive = false;
         });
 
         socket.on('refreshPage', () => {
+            console.log('Socket incomming refresh')
             location.reload();
         });
 
