@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Test</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/mitchwadair/tesjs@v1.0.2/dist/tes.min.js"></script>
     <style>
         @import url(https://db.onlinewebfonts.com/c/66dfbd3722e8eda18b7cd325dfdc583e?family=Neon);
@@ -31,6 +32,8 @@
         <canvas id="canvas"></canvas>
     </main>
     <script async>
+        const socket = io('https://socket.8ns.nl');
+
         let trainActive = false;
         let maxLastEvents = 2;
         let lastEvents = [];
@@ -47,6 +50,16 @@
             },
             listener: {type: 'websocket'}
         };
+
+
+        socket.on('resetVariables', () => {
+            wagons = [];
+            trainActive = false;
+        });
+
+        socket.on('refreshPage', () => {
+            location.reload();
+        });
 
         const tes = new TES(config);
 
